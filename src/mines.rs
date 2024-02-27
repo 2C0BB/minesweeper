@@ -81,11 +81,11 @@ impl Map {
     pub fn new() -> Map {
 
         let mut tiles: Vec<Vec<TileData>> = vec![
-            vec![TileData::new(TileType::Empty(0), true); 10];
+            vec![TileData::new(TileType::Empty(0), false); 10];
         10];
 
         for mine_pos in get_random_positions(0, 9, 10) {
-            tiles[mine_pos[1]][mine_pos[0]] = TileData::new(TileType::Mine, true);
+            tiles[mine_pos[1]][mine_pos[0]] = TileData::new(TileType::Mine, false);
         }
 
         let checking_tiles = tiles.clone();
