@@ -3,13 +3,13 @@ pub mod mines;
 use std::io::{self, Write};
 use std::time::Duration;
 
-use crossterm::{style::{Color, Stylize}, queue, event::{poll, read, Event, KeyCode}};
+use crossterm::{style::{Color, Stylize}, queue, execute, event::{poll, read, Event, KeyCode}};
 
 fn update_screen(map: &mines::Map, curs_x: usize, curs_y: usize) {
 
     queue!(io::stdout(), 
            crossterm::terminal::Clear(crossterm::terminal::ClearType::All),
-           crossterm::cursor::MoveTo(0,0)).unwrap();
+           crossterm::cursor::MoveTo(0, 0)).unwrap();
 
     for (row, line) in map.to_string().split("\n").enumerate() {
 
@@ -47,6 +47,7 @@ fn main() {
     let mut curs_y: usize = 0;
 
     let mut should_update: bool = true;
+    let mut should_finish: bool = false;
     loop {
         if poll(Duration::ZERO).unwrap() {
             match read().unwrap() {
@@ -54,7 +55,7 @@ fn main() {
                     if event.kind == crossterm::event::KeyEventKind::Press {
                         match event.code {
                             KeyCode::Esc => {
-                                return;
+                                should_finish = true;
                             }
 
                             KeyCode::Up => {
@@ -85,9 +86,15 @@ fn main() {
                             KeyCode::Char(ch) => {
                                 match ch {
                                     'd' => {
-                                        map.dig(curs_x, curs_y);
+                                        if map.dig(curs_x, curs_y) {
+                                            should_finish = true;
+                                        }
                                         should_update = true;
                                     },
+                                    'f' => {
+                                        map.flag(curs_x, curs_y);
+                                        should_update = true;
+                                    }
                                     _ => {}
                                 }
                             }
@@ -104,6 +111,18 @@ fn main() {
             update_screen(&map, curs_x, curs_y);
             should_update = false;
         }
+
         io::stdout().flush().unwrap();
+
+        if map.is_done() {
+            println!("win!!");
+            return;
+        }
+
+        if should_finish {
+            break;
+        }
     }
+
+    execute!(io::stdout(), crossterm::cursor::Show).unwrap();
 }

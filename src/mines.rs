@@ -11,21 +11,32 @@ enum TileType {
 struct TileData {
     tile_type: TileType,
     opened: bool,
+    flagged: bool
 }
 
 impl TileData {
-    fn new(tile_type: TileType, opened: bool) -> TileData {
-        TileData {tile_type, opened}
+    fn new(tile_type: TileType, opened: bool, flagged: bool) -> TileData {
+        TileData {tile_type, opened, flagged}
     }
 
     fn to_char(&self) -> char {
         if self.opened {
             match self.tile_type {
                 TileType::Mine => '*',
-                TileType::Empty(n) => (n + 48) as char,
+                TileType::Empty(n) => {
+                    if n == 0 {
+                        ' '
+                    } else {
+                        (n + 48) as char
+                    }
+                },
             }
         } else {
-            '#'
+            if self.flagged {
+                'F'
+            } else {
+                '#'
+            }
         }
     }
 }
@@ -81,11 +92,11 @@ impl Map {
     pub fn new() -> Map {
 
         let mut tiles: Vec<Vec<TileData>> = vec![
-            vec![TileData::new(TileType::Empty(0), false); 10];
+            vec![TileData::new(TileType::Empty(0), false, false); 10];
         10];
 
         for mine_pos in get_random_positions(0, 9, 10) {
-            tiles[mine_pos[1]][mine_pos[0]] = TileData::new(TileType::Mine, false);
+            tiles[mine_pos[1]][mine_pos[0]] = TileData::new(TileType::Mine, false, false);
         }
 
         let checking_tiles = tiles.clone();
@@ -113,16 +124,66 @@ impl Map {
         }
     }
 
-    pub fn dig(&mut self, x: usize, y: usize) {
-        let tile: &mut TileData = vec_at_pos_mut(&mut self.tiles, &[x, y]);
+    pub fn dig(&mut self, x: usize, y: usize) -> bool {
 
-        if tile.opened {
-            return;
+        // return is current value is mine
+        {
+            let temp_tile: &mut TileData = vec_at_pos_mut(&mut self.tiles, &[x, y]);
+
+            if temp_tile.flagged {
+                return false;
+            }
+
+            if temp_tile.tile_type == TileType::Mine {
+                temp_tile.opened = true;
+                return true;
+            }
         }
 
-        tile.opened = true;
+        let mut to_check: Vec<[usize; 2]> = Vec::new();
+        to_check.push([x, y]);
 
-        // TODO: ADD CLEARING NEIGHBOURS FOR 0
+        while !to_check.is_empty() {
+            let checking_pos: [usize; 2] = to_check.pop().unwrap();
+            let checking_type: TileType;
+            {
+                let checking: &mut TileData = vec_at_pos_mut(&mut self.tiles, &checking_pos);
+                checking.opened = true;
+
+                checking_type = checking.tile_type.clone();
+            }
+
+            match checking_type {
+                TileType::Empty(n) => {
+                    if n == 0 {
+                        let mut unopened_neighbours: Vec<[usize; 2]> = get_neighbours(checking_pos[0], checking_pos[1])
+                            .into_iter()
+                            .filter(|neigh| vec_at_pos(&self.tiles, neigh).opened == false)
+                            .collect();
+
+                        to_check.append(&mut unopened_neighbours);
+                    }
+                },
+                _ => unreachable!(),
+            }
+        }
+
+        false
+    }
+
+    pub fn flag(&mut self, x: usize, y: usize) {
+        let tile: &mut TileData = vec_at_pos_mut(&mut self.tiles, &[x, y]);
+        tile.flagged = !tile.flagged;
+    }
+
+    pub fn is_done(&self) -> bool {
+        let non_mines: Vec<&TileData> = self.tiles
+            .iter()
+            .flatten()
+            .filter(|x| x.tile_type != TileType::Mine)
+            .collect();
+
+        return non_mines.iter().all(|x| x.opened);
     }
 
     pub fn to_string(&self) -> String {
