@@ -41,12 +41,12 @@ impl TileData {
     }
 }
 
-fn get_neighbours(x: usize, y: usize) -> Vec<[usize; 2]>  {
+fn get_neighbours(x: usize, y: usize, size: usize) -> Vec<[usize; 2]>  {
 
     let mut out: Vec<[usize; 2]> = Vec::new();
 
-    for r in cmp::max(y, 1)-1..=cmp::min(y, 8)+1 {
-        for c in cmp::max(x, 1)-1..=cmp::min(x, 8)+1 {
+    for r in cmp::max(y, 1)-1..=cmp::min(y, size - 2)+1 {
+        for c in cmp::max(x, 1)-1..=cmp::min(x, size - 2)+1 {
             if !(r == y && c == x) {
                 out.push([c, r]);
             }
@@ -86,16 +86,17 @@ fn get_random_positions(min: usize, max: usize, amount: usize) -> Vec<[usize; 2]
 
 pub struct Map {
     tiles: Vec<Vec<TileData>>,
+    size: usize,
 }
 
 impl Map {
-    pub fn new() -> Map {
+    pub fn new(size: usize, mines: usize) -> Map {
 
         let mut tiles: Vec<Vec<TileData>> = vec![
-            vec![TileData::new(TileType::Empty(0), false, false); 10];
-        10];
+            vec![TileData::new(TileType::Empty(0), false, false); size];
+        size];
 
-        for mine_pos in get_random_positions(0, 9, 10) {
+        for mine_pos in get_random_positions(0, size - 1, mines) {
             tiles[mine_pos[1]][mine_pos[0]] = TileData::new(TileType::Mine, false, false);
         }
 
@@ -108,7 +109,7 @@ impl Map {
                     continue;
                 }
 
-                let neighbours: usize = get_neighbours(x, y)
+                let neighbours: usize = get_neighbours(x, y, size)
                     .iter()
                     .map(|n| vec_at_pos(&checking_tiles, &[n[0], n[1]]))
                     .filter(|n| n.tile_type == TileType::Mine)
@@ -121,6 +122,7 @@ impl Map {
 
         Map {
             tiles,
+            size,
         }
     }
 
@@ -156,7 +158,7 @@ impl Map {
             match checking_type {
                 TileType::Empty(n) => {
                     if n == 0 {
-                        let mut unopened_neighbours: Vec<[usize; 2]> = get_neighbours(checking_pos[0], checking_pos[1])
+                        let mut unopened_neighbours: Vec<[usize; 2]> = get_neighbours(checking_pos[0], checking_pos[1], self.size)
                             .into_iter()
                             .filter(|neigh| vec_at_pos(&self.tiles, neigh).opened == false)
                             .collect();

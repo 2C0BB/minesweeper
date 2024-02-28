@@ -2,6 +2,7 @@ pub mod mines;
 
 use std::io::{self, Write};
 use std::time::Duration;
+use std::env;
 
 use crossterm::{style::{Color, Stylize}, queue, execute, event::{poll, read, Event, KeyCode}};
 
@@ -19,6 +20,20 @@ fn update_screen(map: &mines::Map, curs_x: usize, curs_y: usize) {
                     ch,
             );
 
+            styled = match ch {
+                'F' => styled.dark_yellow(),
+                '1' => styled.blue(),
+                '2' => styled.green(),
+                '3' => styled.red(),
+                '4' => styled.dark_blue(),
+                '5' => styled.dark_red(),
+                '6' => styled.cyan(),
+                '7' => styled.dark_magenta(),
+                '8' => styled.grey(),
+
+                _ => styled,
+            };
+
             if row == curs_y && col == curs_x {
                 styled = styled.on(Color::Blue);
             }
@@ -35,7 +50,32 @@ fn update_screen(map: &mines::Map, curs_x: usize, curs_y: usize) {
 }
 
 fn main() {
-    let mut map: mines::Map = mines::Map::new();
+
+    let argv: Vec<String> = env::args().collect();
+    let argc: usize = argv.len();
+
+
+    let map_size: usize;
+    let mines_num: usize;
+
+    match argc {
+        3 => {
+            let num_args: Vec<usize> = argv.iter()
+                .skip(1)
+                .map(|x| x.parse::<usize>().unwrap())
+                .collect();
+           
+            map_size = num_args[0];
+            mines_num = num_args[1];
+        }
+
+        _ => {
+            map_size = 10;
+            mines_num = 10;
+        }
+    }
+
+    let mut map: mines::Map = mines::Map::new(map_size, mines_num);
 
     crossterm::terminal::enable_raw_mode().unwrap();
     queue!(io::stdout(), 
@@ -65,7 +105,7 @@ fn main() {
                                 }
                             }
                             KeyCode::Down => {
-                                if curs_y < 9 {
+                                if curs_y < map_size - 1 {
                                     curs_y += 1;
                                     should_update = true;
                                 }
@@ -77,7 +117,7 @@ fn main() {
                                 }
                             }
                             KeyCode::Right => {
-                                if curs_x < 9 {
+                                if curs_x < map_size - 1 {
                                     curs_x += 1;
                                     should_update = true;
                                 }
