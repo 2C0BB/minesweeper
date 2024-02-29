@@ -67,6 +67,11 @@ fn main() {
            
             map_size = num_args[0];
             mines_num = num_args[1];
+
+            if mines_num > map_size * map_size {
+                println!("too many mines for map size");
+                return;
+            }
         }
 
         _ => {
