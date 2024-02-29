@@ -155,8 +155,9 @@ fn main() {
         io::stdout().flush().unwrap();
 
         if map.is_done() {
-            println!("win!!");
-            return;
+            println!("you win!");
+            
+            should_finish = true;
         }
 
         if should_finish {
