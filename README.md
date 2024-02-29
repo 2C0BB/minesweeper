@@ -6,7 +6,7 @@ Console based minesweeper built in Rust using [crossterm](https://crates.io/crat
 - [Images](#images)
 - [Installation](#installation)
 - [Usage](#usage)
-- [How to Play](<How to Play>)
+- [How to Play](#How-to-Play)
 
 ## Images
 
