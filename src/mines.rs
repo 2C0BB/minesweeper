@@ -33,9 +33,10 @@ impl TileData {
             }
         } else {
             if self.flagged {
-                'F'
+                '\u{2691}'
             } else {
-                '#'
+                '\u{025AA}'
+                //'#'
             }
         }
     }
@@ -128,7 +129,38 @@ impl Map {
 
     pub fn dig(&mut self, x: usize, y: usize) -> bool {
 
-        // return is current value is mine
+        // if opened check if can double-click
+        let is_opened: bool = vec_at_pos(&self.tiles, &[x, y]).opened;
+        if is_opened {
+
+            let tile_num: usize = match vec_at_pos(&self.tiles, &[x, y]).tile_type {
+                TileType::Empty(n) => n as usize,
+                TileType::Mine => unreachable!()
+            };
+
+            let flag_neighbour_count: usize = get_neighbours(x, y, self.size)
+                .iter()
+                .map(|pos| vec_at_pos(&self.tiles, pos))
+                .filter(|neigh| neigh.flagged && !neigh.opened)
+                .count();
+
+            if flag_neighbour_count == tile_num {
+                for to_dig in get_neighbours(x, y, self.size) {
+                    let to_dig_tile: &TileData = vec_at_pos(&self.tiles, &to_dig);
+
+                    if !to_dig_tile.opened {
+                        if self.dig(to_dig[0], to_dig[1]) {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            // if we are digging an already open tile it wont be a mine.
+            return false;
+        }
+
+        //otherwise act as a normal dig on unopened tile
         {
             let temp_tile: &mut TileData = vec_at_pos_mut(&mut self.tiles, &[x, y]);
 

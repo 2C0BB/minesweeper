@@ -21,7 +21,7 @@ fn update_screen(map: &mines::Map, curs_x: usize, curs_y: usize) {
             );
 
             styled = match ch {
-                'F' => styled.dark_yellow(),
+                '\u{2691}' => styled.red(),
                 '1' => styled.blue(),
                 '2' => styled.green(),
                 '3' => styled.red(),
@@ -35,7 +35,7 @@ fn update_screen(map: &mines::Map, curs_x: usize, curs_y: usize) {
             };
 
             if row == curs_y && col == curs_x {
-                styled = styled.on(Color::Blue);
+                styled = styled.on(Color::Magenta);
             }
 
             queue!(io::stdout(), 
