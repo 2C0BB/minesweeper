@@ -1,16 +1,22 @@
 pub mod mines;
 
 use std::io::{self, Write};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use std::env;
 
 use crossterm::{style::{Color, Stylize}, queue, execute, event::{poll, read, Event, KeyCode}};
 
-fn update_screen(map: &mines::Map, curs_x: usize, curs_y: usize) {
+fn update_screen(map: &mines::Map, curs_x: usize, curs_y: usize, time: Duration) {
 
     queue!(io::stdout(), 
            crossterm::terminal::Clear(crossterm::terminal::ClearType::All),
            crossterm::cursor::MoveTo(0, 0)).unwrap();
+
+    queue!(io::stdout(),
+        crossterm::style::Print(format!("Time: {:?} seconds.", time.as_secs())),
+        crossterm::cursor::MoveDown(1),
+        crossterm::cursor::MoveToColumn(0),
+    ).unwrap();
 
     for (row, line) in map.to_string().split("\n").enumerate() {
 
@@ -50,6 +56,8 @@ fn update_screen(map: &mines::Map, curs_x: usize, curs_y: usize) {
 }
 
 fn main() {
+
+    let start = Instant::now();
 
     let argv: Vec<String> = env::args().collect();
     let argc: usize = argv.len();
@@ -93,7 +101,18 @@ fn main() {
 
     let mut should_update: bool = true;
     let mut should_finish: bool = false;
+
+    let mut last_time: Duration = start.elapsed();
+
     loop {
+
+        let current_time: Duration = start.elapsed();
+
+        if current_time.as_secs() > last_time.as_secs() {
+            should_update = true;
+        }
+        last_time = current_time;
+        
         if poll(Duration::ZERO).unwrap() {
             match read().unwrap() {
                 Event::Key(event) => {
@@ -153,7 +172,7 @@ fn main() {
         }
 
         if should_update {
-            update_screen(&map, curs_x, curs_y);
+            update_screen(&map, curs_x, curs_y, current_time);
             should_update = false;
         }
 
@@ -161,11 +180,12 @@ fn main() {
 
         if map.is_done() {
             println!("you win!");
-            
+
             should_finish = true;
         }
 
         if should_finish {
+            println!("Game complete in: {:?} seconds.", current_time.as_secs());
             break;
         }
     }
